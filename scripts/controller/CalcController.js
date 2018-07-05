@@ -2,6 +2,7 @@ class CalcController {
 
     constructor(){
       
+        this._operation = [];
         this._displayCalcEl = document.querySelector("#display"); // _ => padrao quando é private
         this._dateEl = document.querySelector("#data");
         this._timeEl = document.querySelector("#hora"); 
@@ -32,6 +33,112 @@ class CalcController {
         });
     }
 
+    clearAll(){
+
+        this._operation = [];
+    }
+
+    clearEntry(){
+
+        this._operation.pop(); //elimina o ultimo
+    }
+
+    getLastOperation(){
+
+        return this._operation[this._operation.length-1];
+    }
+
+    setLastOperation(value){
+
+        this._operation[this._operation.length-1] = value;
+    }
+
+    isOperator(value){
+
+        return (['+','-','*','/','%'].indexOf(value) > -1); //verifica se existe algum dos itens do array no param, n encontra ret -1
+    }
+
+    addOperation(value){
+
+        if(isNaN(this.getLastOperation())) { //verifica o que já estava
+            //string
+            
+            if(this.isOperator(value)){
+                //trocar o operador
+
+                this.setLastOperation(value);
+            }else if (isNaN(value)){
+                //outra coisa
+                console.log(value);
+            } else {
+
+                //primeiro num digitado
+                this._operation.push(value);
+            }
+        } else { //numero ou .
+
+            let newValue = this.getLastOperation().toString() + value.toString();
+            this.setLastOperation(parseInt(newValue));
+        }   
+
+        console.log(this._operation);
+    }
+
+    setError(){
+
+        this.displayCalc = "error";
+    }
+
+    execBtn(value) {
+
+        switch (value) {
+
+            case 'ac':
+                this.clearAll();
+            break;
+            case 'ce':
+                this.clearEntry();
+            break;
+            case 'ponto':
+                this.addOperation('.');
+            break;
+            case 'soma':
+                this.addOperation('+');
+            break;
+            case 'subtracao':
+                this.addOperation('-');  
+            break;
+            case 'divisao':
+                this.addOperation('/');  
+            break;
+            case 'multiplicacao':
+                this.addOperation('*');
+            break;
+            case 'porcento':
+                this.addOperation('%'); 
+            break;
+            case 'igual':
+                
+            break;
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                this.addOperation(parseInt(value));
+            break; // so tem break no ultimo pq eles sempre executam o mesmo comando
+            default:
+                this.setError();
+            break;
+            
+        }
+    }
+
     initButtonsEvents(){
 
         let buttons = document.querySelectorAll("#buttons > g, #parts > g"); // All traz todos, pega id buttons, > filhos g
@@ -40,7 +147,9 @@ class CalcController {
 
             this.addEventListenerAll(btn, 'click drag', e => { //metodo criado aqui
 
-                console.log(btn.className.baseVal.replace("btn-", ""));
+                let textBtn = btn.className.baseVal.replace("btn-", "");
+
+                this.execBtn(textBtn);
             });
 
             this.addEventListenerAll(btn, 'mouseover mouseup mousedown', e => {
