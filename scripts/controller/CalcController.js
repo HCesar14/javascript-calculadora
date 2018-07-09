@@ -22,6 +22,8 @@ class CalcController {
           this.setDisplayDateTime();
 
         }, 1000); //att a cada segundo
+
+        this.setLastNumberToDisplay();
     }
 
     addEventListenerAll(element, events, fn){ //botao, evento, funcao ao ocorrer o evento
@@ -36,11 +38,17 @@ class CalcController {
     clearAll(){
 
         this._operation = [];
+
+        //atualizar display
+        this.setLastNumberToDisplay();
     }
 
     clearEntry(){
 
         this._operation.pop(); //elimina o ultimo
+
+        //atualizar display
+        this.setLastNumberToDisplay();
     }
 
     getLastOperation(){
@@ -58,9 +66,63 @@ class CalcController {
         return (['+','-','*','/','%'].indexOf(value) > -1); //verifica se existe algum dos itens do array no param, n encontra ret -1
     }
 
+    pushOperation(value){
+
+        this._operation.push(value);
+
+        if(this._operation.length > 3){ //fazer contas em pares
+         
+            this.calc();
+        }
+    }
+
+    calc(){
+
+        let last = '';
+
+        if(this._operation.length > 3){
+            last = this._operation.pop();
+        }
+
+        let result = eval(this._operation.join('')); //eval funcao propria do js que executa js dentro de string
+            //join = toString so que pode escolher um delimitador no caso aqui é nenhum
+
+        if(last == '%') {
+
+            result /= 100;
+
+            this._operation = [result];
+        } else {
+            
+            this._operation = [result];
+
+            if(last) this._operation.push(last);
+        }     
+
+        //atualizar display
+        this.setLastNumberToDisplay();
+    }
+
+    setLastNumberToDisplay(){
+
+        let lastNumber;
+
+        for(let i = this._operation.length-1; i >= 0; i--){
+
+            if(!this.isOperator(this._operation[i])){ //numero
+                lastNumber = this._operation[i];
+                break; // para o for
+            }
+        }
+
+        if(!lastNumber) lastNumber = 0;
+
+        this.displayCalc = lastNumber;
+    }
+
     addOperation(value){
 
-        if(isNaN(this.getLastOperation())) { //verifica o que já estava
+        if(isNaN(this.getLastOperation())) { //verifica o que já estava se não é numero
             //string
             
             if(this.isOperator(value)){
@@ -69,19 +131,33 @@ class CalcController {
                 this.setLastOperation(value);
             }else if (isNaN(value)){
                 //outra coisa
-                console.log(value);
+
+                console.log('outra coisa');
+
             } else {
 
                 //primeiro num digitado
-                this._operation.push(value);
+                this.pushOperation(value);
+
+                //atualizar display
+                this.setLastNumberToDisplay();
+
             }
         } else { //numero ou .
 
-            let newValue = this.getLastOperation().toString() + value.toString();
-            this.setLastOperation(parseInt(newValue));
-        }   
+            if(this.isOperator(value)){ //verifica se o atual é um operador
+                
+                this.pushOperation(value);
+            } else { //não é operador - é um numero
 
-        console.log(this._operation);
+                let newValue = this.getLastOperation().toString() + value.toString();
+                this.setLastOperation(parseInt(newValue));
+
+                //atualizar display
+                this.setLastNumberToDisplay();
+            }
+            
+        }   
     }
 
     setError(){
@@ -115,10 +191,10 @@ class CalcController {
                 this.addOperation('*');
             break;
             case 'porcento':
-                this.addOperation('%'); 
+                this.addOperation('%'); //em js é modulo
             break;
             case 'igual':
-                
+                this.calc();
             break;
             case '0':
             case '1':
