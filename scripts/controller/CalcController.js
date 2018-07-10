@@ -1,6 +1,9 @@
 class CalcController {
 
     constructor(){
+
+        this._lastOperator = '';
+        this._lastNumber = '';
       
         this._operation = [];
         this._displayCalcEl = document.querySelector("#display"); // _ => padrao quando é private
@@ -38,6 +41,8 @@ class CalcController {
     clearAll(){
 
         this._operation = [];
+        this._lastNumber = '';
+        this._lastOperator = '';
 
         //atualizar display
         this.setLastNumberToDisplay();
@@ -76,16 +81,34 @@ class CalcController {
         }
     }
 
+    getResult(){
+
+        return eval(this._operation.join('')); //eval funcao propria do js que executa js dentro de string
+        //join = toString so que pode escolher um delimitador no caso aqui é nenhum
+    }
+
     calc(){
 
         let last = '';
 
-        if(this._operation.length > 3){
-            last = this._operation.pop();
+        this._lastOperator = this.getLastItem();
+
+        if(this._operation.length < 3) { //quando apertar igual varias vezes
+
+            let firstItem = this._operation[0];
+            this._operation = [firstItem, this._lastOperator, this._lastNumber];
         }
 
-        let result = eval(this._operation.join('')); //eval funcao propria do js que executa js dentro de string
-            //join = toString so que pode escolher um delimitador no caso aqui é nenhum
+        if(this._operation.length > 3){ // 2 + 3 +
+            
+            last = this._operation.pop();            
+            this._lastNumber = this.getResult(); //guardar resultado pra guardar pro btn igual
+        }else if(this._operation.length == 3){ // 2 + 3 
+
+            this._lastNumber = this.getLastItem(false);
+        }
+
+        let result = this.getResult();
 
         if(last == '%') {
 
@@ -103,17 +126,29 @@ class CalcController {
         this.setLastNumberToDisplay();
     }
 
-    setLastNumberToDisplay(){
+    getLastItem(isOperator = true){// true procurando operador, false procurando numero
 
-        let lastNumber;
+        let lastItem;
 
         for(let i = this._operation.length-1; i >= 0; i--){
 
-            if(!this.isOperator(this._operation[i])){ //numero
-                lastNumber = this._operation[i];
+            if(this.isOperator(this._operation[i]) == isOperator){ //operador
+                lastItem = this._operation[i];
                 break; // para o for
-            }
+            } 
         }
+
+        if(!lastItem){
+
+            lastItem = (isOperator) ? this._lastOperator : this._lastNumber;
+        }
+
+        return lastItem;
+    }
+
+    setLastNumberToDisplay(){
+
+        let lastNumber = this.getLastItem(false); //procurando numero
 
         if(!lastNumber) lastNumber = 0;
 
@@ -129,11 +164,6 @@ class CalcController {
                 //trocar o operador
 
                 this.setLastOperation(value);
-            }else if (isNaN(value)){
-                //outra coisa
-
-                console.log('outra coisa');
-
             } else {
 
                 //primeiro num digitado
@@ -151,7 +181,7 @@ class CalcController {
             } else { //não é operador - é um numero
 
                 let newValue = this.getLastOperation().toString() + value.toString();
-                this.setLastOperation(parseInt(newValue));
+                this.setLastOperation(newValue);
 
                 //atualizar display
                 this.setLastNumberToDisplay();
@@ -165,6 +195,23 @@ class CalcController {
         this.displayCalc = "error";
     }
 
+    addDot(){
+
+        let lastOperation = this.getLastOperation();
+
+        if(typeof lastOperation === 'string' && lastOperation.split('').indexOf('.') > -1) return;
+        //testa se esta vindo uma string (opérador) e testa se nesta string ja tem um ponto se sim 
+        //ja sai do metodo e n faz nada
+
+        if(this.isOperator(lastOperation) || ! lastOperation){ // operador antes ou n tem nenhum antes
+            this.pushOperation('0.')
+        } else {
+            this.setLastOperation(lastOperation.toString() + '.');
+        }
+
+        this.setLastNumberToDisplay();
+    }
+
     execBtn(value) {
 
         switch (value) {
@@ -176,7 +223,7 @@ class CalcController {
                 this.clearEntry();
             break;
             case 'ponto':
-                this.addOperation('.');
+                this.addDot();
             break;
             case 'soma':
                 this.addOperation('+');
