@@ -2,6 +2,8 @@ class CalcController {
 
     constructor(){
 
+        this._audio = new Audio('click.mp3');
+        this._audioOnOff = false;
         this._lastOperator = '';
         this._lastNumber = '';
       
@@ -14,6 +16,36 @@ class CalcController {
 
         this.initialize();
         this.initButtonsEvents();
+        this.pasteFromClipboard();
+        this.initKeyboard();
+    }
+
+    pasteFromClipboard(){ // cola da area de transferencia
+
+        document.addEventListener('paste', e => {
+
+            let text = e.clipboardData.getData('Text');
+
+            this.displayCalc = parseFloat(text);
+
+            console.log(text);
+
+        });
+    }
+
+    copyToClipboard(){ //copiar para area de transferencia
+
+        let input = document.createElement('input');
+
+        input.value = this.displayCalc;
+
+        document.body.appendChild(input);
+
+        input.select();
+
+        document.execCommand('Copy');
+
+        input.remove();
     }
 
     initialize(){
@@ -27,6 +59,80 @@ class CalcController {
         }, 1000); //att a cada segundo
 
         this.setLastNumberToDisplay();
+
+        document.querySelectorAll('.btn-ac').forEach(btn =>{
+
+            btn.addEventListener('dblclick', e => { //dblclick = double click
+
+                this.toggleAudio();
+            });
+        });
+    }
+
+    toggleAudio(){
+
+        this._audioOnOff = !this._audioOnOff; // ao contrario dele
+    }
+
+    playAudio(){
+
+        if(this._audioOnOff) {
+
+            this._audio.currentTime = 0; //audio voltar ao inicio
+            this._audio.play();
+        }
+    }
+
+    initKeyboard(){
+
+        document.addEventListener('keyup', e => {
+
+            this.playAudio();
+
+            switch (e.key) {
+
+                case 'Escape':
+                    this.clearAll();
+                break;
+                case 'Backspace':
+                    this.clearEntry();
+                break;
+                case '.':
+                    this.addDot();
+                break;
+                case ',':
+                    this.addDot();
+                break;
+                case '+':
+                case '-':
+                case '/':
+                case '*':
+                case '%':
+                    this.addOperation(e.key);
+                break;
+                case '=':
+                    this.calc();
+                break;
+                case 'Enter':
+                    this.calc();
+                break;
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    this.addOperation(parseInt(e.key));
+                break; // so tem break no ultimo pq eles sempre executam o mesmo comando
+                case 'c':
+                    if(e.ctrlKey) this.copyToClipboard();
+                break;
+            }
+        });
     }
 
     addEventListenerAll(element, events, fn){ //botao, evento, funcao ao ocorrer o evento
@@ -83,8 +189,15 @@ class CalcController {
 
     getResult(){
 
-        return eval(this._operation.join('')); //eval funcao propria do js que executa js dentro de string
+        try{
+            return eval(this._operation.join('')); //eval funcao propria do js que executa js dentro de string
         //join = toString so que pode escolher um delimitador no caso aqui é nenhum
+        } catch(e){
+            setTimeout(() => {
+                this.setError();
+            }, 1);      
+        }
+        
     }
 
     calc(){
@@ -214,6 +327,8 @@ class CalcController {
 
     execBtn(value) {
 
+        this.playAudio();
+
         switch (value) {
 
             case 'ac':
@@ -313,6 +428,13 @@ class CalcController {
     }
 
     set displayCalc(value){
+
+        if(value.toString().length > 10) {
+
+            this.setError();
+            return false; // para nao setar o display abaixo
+        }
+
         this._displayCalcEl.innerHTML = value; 
     }
 
